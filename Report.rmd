@@ -1,0 +1,120 @@
+---
+title: "Reports in Rmarkdown"
+author: "Justin and Arturo"
+output: pdf_document
+---
+
+```{r setup, echo = F, include = F}
+library(pander)
+require(tidyverse)
+
+#Global Parameters for all code chunks
+knitr::opts_chunk$set(cache = TRUE, echo = F)
+
+#When using the control file this param needs to be commented/removed
+species_param <- "versicolor"
+```
+
+
+#Main Title
+
+## Report for Species `r species_param`
+
+In this Rmarkdown we will show how to build a workflow around RMarkdown that allows for the automated generation of reports.
+
+##Repository Organisation  
+
+There are several key files that are often useful when writing remports in `RMarkdown` (especially when the project is _big_):  
+
++ **RMarkdown document** (this one)  
++ **Data** (usually excel/csv files)  
++ **Control file**: used to automatically generate reports  
++ R Scripts and additional data wrangling (helps keep long code out of this document)  
++ Git/version control (we can leave this for another time)
+
+##Rmarkdown Basics  
+
+RMarkdown is a document written in the markdown language that has embedded `R code`. For instance, I can add a calculation into the the text, such as the sum of two integers (three and five): `r 3+5`. We can also add _code chunks_:  
+
+```{r}
+table(iris$Species) %>% pander()
+```
+
+<!-- We can add latex commands through the text section, such as \newpage -->
+\newpage
+
+##Graphical Presentation of Data  
+
+Ultimately, your report will begin to blend text, code, tables and figures. In this case we can include a scatter splot that shows the relationship between sepal length and sepal width for each species:    
+
+```{r, fig.width = 6, fig.height=4}
+iris %>% 
+  ggplot(aes(x = Sepal.Length, 
+                    y = Sepal.Width,
+                    fill = Species))+
+  geom_point(shape = 21)+
+  geom_smooth(aes(colour = Species), method = "lm", se = F)+
+  theme_classic()
+```
+  
+\newpage  
+
+##Generating multiple plots  
+
+Now imagine that we want to look at the correlation between sepal lengths and sepal widths for each of the iris plant species, **BUT** we want to keep the other two species unidentifiable... For instance, imagine we want to make a report for _setosa_ but we don't want the person reading it to know what the correlation is for the other two species. 
+
+If you wanted to make three figures for each species, you could make a loop within this RMarkdown: 
+
+```{r, fig.width=6, fig.height=2.25, fig.align='center',results='asis'}
+#Loop for unique species names
+for (spec in unique(iris$Species)){
+ plot<- ggplot(data = iris %>% filter(Species == spec), #only plot filled circles for species of interest
+         aes(x = Sepal.Length, 
+                    y = Sepal.Width))+
+  geom_point(data =  iris, fill = "grey90", shape = 21)+
+  geom_point(aes(fill = Species), shape = 21, size = 2)+
+  geom_smooth(colour = "tomato", 
+              method = "lm", 
+              se = F)+
+   scale_fill_manual(values = "tomato")+
+   ggtitle(spec)+
+  theme_classic()
+ 
+ # Page layout
+ print(plot)
+}
+```
+
+\newpage  
+
+##Generating multiple reports  
+
+But, we are interested in generating multiple reports, so the loop should be placed outside of this RMarkdown, for this purpose we make a control file. The following plot will than render for each unique species  
+
+```{r, fig.width = 6, fig.height=4}
+ggplot(data = iris %>% filter(Species == species_param), #only plot filled circles for species of interest
+         aes(x = Sepal.Length, 
+                    y = Sepal.Width))+
+  geom_point(data =  iris, fill = "grey90", shape = 21)+
+  geom_point(aes(fill = Species), shape = 21, size = 2)+
+  geom_smooth(colour = "tomato", 
+              method = "lm", 
+              se = F)+
+   scale_fill_manual(values = "tomato")+
+  ggtitle(paste0("Relationship for Species ", species_param))+
+  theme_classic()
+```
+  
+  
+**Finally**, we can customise large sections of text that someone has written externally and placed in a csv. To do that we map a _csv_ file with the custom text to the specific report parameter (Species). The following is taken from the wikipedia entries for each species:  
+
+```{r echo = F, results='asis'}
+Species_description <- read.csv('Species_description.csv', stringsAsFactors = F)
+Species_description <- Species_description %>% filter(Species == species_param)
+cat(Species_description$Text_string)
+```
+
+
+
+
+

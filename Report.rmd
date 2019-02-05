@@ -9,10 +9,10 @@ library(pander)
 require(tidyverse)
 
 #Global Parameters for all code chunks
-knitr::opts_chunk$set(cache = TRUE, echo = F)
+knitr::opts_chunk$set(cache = FALSE, echo = FALSE)
 
 #When using the control file this param needs to be commented/removed
-species_param <- "versicolor"
+#species_param <- "versicolor"
 ```
 
 
